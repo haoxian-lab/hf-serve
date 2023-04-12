@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "hf-serve"
+version = "0.1.0"
+description = "A simple project to use Huggingface models as a service. And a benchmark with locust around it."
+authors = ["Haoxian WANG"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "hf_serve"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+aioredis = "^2.0.0"
+fastapi = "^0.95.0"
+transformers = "^4.12.0"
+torch = "^1.9.0"
+starlette = "^0.26.1"
+uvicorn = "^0.21.1"
+locust = "^2.15.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+isort = "^5.12.0"
+mypy = "^1.2.0"
+pylint = "^2.17.2"
+pytest = "^7.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
