@@ -1,5 +1,5 @@
 # Use the official Python image as the base image
-FROM python:3.10-slim-buster
+FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu22.04
 
 # Set the working directory in the container
 WORKDIR /app
@@ -13,13 +13,17 @@ COPY hf_serve ./hf_serve
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libgomp1 \
+        python3.10 \
+        python3-pip \
         && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install poetry && poetry config virtualenvs.create false && poetry install && rm -rf ~/.cache
+RUN ln -s /usr/bin/python3 /usr/bin/python 
+
+RUN pip install poetry && poetry config virtualenvs.create false && poetry install && rm -rf ~/.cache
 
 # Install pytorch with cuda
-RUN pip3 install torch  --index-url https://download.pytorch.org/whl/cu118 --no-cache-dir
+RUN pip install torch  --index-url https://download.pytorch.org/whl/cu118 --no-cache-dir
 
 
 
