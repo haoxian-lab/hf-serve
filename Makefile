@@ -47,4 +47,5 @@ run-fastapi:
 	poetry run uvicorn hf_serve.serving_fastapi:app --reload
 
 .PHONY: use curl to test the server
-curl -X POST http://127.0.0.1:8000 -d "Je deteste la reforme des retraites"
+curl:
+	curl -X POST http://192.168.88.179 -d "Je deteste la reforme des retraites"
