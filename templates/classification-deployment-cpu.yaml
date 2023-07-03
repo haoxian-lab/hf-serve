@@ -1,34 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hf-classification-gpu
+  name: hf-classification-cpu
   labels:
     app: hf-runner
-    backend: gpu
+    backend: cpu
 spec:
   selector:
     matchLabels:
       app: hf-runner
-  replicas: 1
+  replicas: 6
   strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
         app: hf-runner
-        backend: gpu
+        backend: cpu
       annotations:
-        backend: GPU
+        backend: CPU
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                - key: role
-                  operator: In
-                  values:
-                    - gpu-rtx3090
       containers:
         - name: hf-serve
           image: sharockys/hfserve
@@ -39,16 +30,18 @@ spec:
           resources:
             requests:
               memory: 8G
-              cpu: "2"
+              cpu: "4"
             limits:
               memory: 14G
-              nvidia.com/gpu: "1"
-
+          env:
+          - name: NVIDIA_VISIBLE_DEVICES
+            value: none
+               
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: hf-classification-gpu-service
+  name: hf-classification-cpu-service
 spec:
   selector:
     app: hf-runner

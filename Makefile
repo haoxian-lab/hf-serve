@@ -48,4 +48,4 @@ run-fastapi:
 
 .PHONY: use curl to test the server
 curl:
-	curl -X POST http://192.168.88.179 -d "Je deteste la reforme des retraites"
+	curl -X POST http://localhost:8000 -d "Je deteste la reforme des retraites"
