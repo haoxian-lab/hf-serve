@@ -5,7 +5,7 @@ description = "A simple project to use Huggingface models as a service. And a be
 authors = ["Haoxian WANG"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "hf_serve"}]
+packages = [{ include = "hf_serve" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -16,6 +16,9 @@ torch = "^1.9.0"
 starlette = "^0.26.1"
 uvicorn = "^0.21.1"
 locust = "^2.15.1"
+prometheus_fastapi_instrumentator = "^6.0.0"
+loguru = "^0.7.0"
+prometheus-client = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
