@@ -1,12 +1,16 @@
-from functools import lru_cache
-from fastapi import FastAPI
-from fastapi import Request, Response
-from transformers import pipeline
 import asyncio
-from hf_serve.config import DEVICE, MODEL
-from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Histogram
+from collections import deque
+from functools import lru_cache
+from time import time
+
+from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import JSONResponse
 from loguru import logger
+from prometheus_client import Histogram
+from prometheus_fastapi_instrumentator import Instrumentator
+from transformers import pipeline
+
+from hf_serve.config import DEVICE, MODEL
 
 app = FastAPI()
 
@@ -22,6 +26,8 @@ latency_metric = Histogram(
     buckets=[0.001, 0.01, 0.1, 1, 10],
 )
 
+inference_latency_queue = deque(maxlen=10)
+
 
 @app.post("/")
 async def homepage(request: Request, response: Response):
@@ -35,7 +41,6 @@ async def homepage(request: Request, response: Response):
     # Start measuring the request latency
     with latency_metric.time():
         output = await response_q.get()
-
     response.status_code = 200
     return output
 
@@ -61,10 +66,28 @@ async def server_loop(q):
         (string, response_q) = await q.get()
 
         # Start measuring the model inference time
-        with inference_time_metric.time():
-            out = perform_inference(pipe, string)
+        begin_time = time()
+        out = perform_inference(pipe, string)
+        duration = time() - begin_time
+        inference_time_metric.observe(duration)
+        inference_latency_queue.append(duration)
 
         await response_q.put(out)
+
+
+@app.get("/health")
+async def health_check():
+    if len(inference_latency_queue) > 0:
+        average_latency = sum(inference_latency_queue) / len(inference_latency_queue)
+        threshold = 10  # seconds
+        if average_latency > threshold:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "status": f"unhealthy with latency {average_latency} > {threshold}"
+                },
+            )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"status": "healthy"})
 
 
 if __name__ == "__main__":
