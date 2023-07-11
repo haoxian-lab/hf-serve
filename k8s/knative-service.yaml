@@ -1,0 +1,29 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: hf-serverless
+  namespace: ml-serving
+spec:
+  template:
+    spec:
+      containers:
+        - image: docker.io/sharockys/hfserve:latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 100
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 5
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                - gpu-a2000
