@@ -2,12 +2,14 @@ import asyncio
 from collections import deque
 from functools import lru_cache
 from time import time
+from typing import Any, Dict, List
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 from prometheus_client import Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
+from pydantic import BaseModel, Field
 from transformers import pipeline
 
 from hf_serve.config import DEVICE, MODEL
@@ -29,11 +31,17 @@ latency_metric = Histogram(
 inference_latency_queue = deque(maxlen=10)
 
 
+class TextClassificationRequestPayload(BaseModel):
+    text_data: str = Field(
+        default="A string to be classified", example="A string to be classified"
+    )
+
+
 @app.post("/")
-async def homepage(request: Request, response: Response):
-    payload = await request.body()
-    # print(f"Received request: {payload}")
-    string = payload.decode("utf-8")
+async def homepage(
+    data: TextClassificationRequestPayload, response: Response
+) -> List[List[Dict[str, Any]]]:
+    string = data.text_data
     logger.info(f"Received request: `{string}`")
     response_q = asyncio.Queue()
     await app.model_queue.put((string, response_q))
@@ -41,6 +49,7 @@ async def homepage(request: Request, response: Response):
     # Start measuring the request latency
     with latency_metric.time():
         output = await response_q.get()
+
     response.status_code = 200
     return output
 
@@ -75,7 +84,7 @@ async def server_loop(q):
         await response_q.put(out)
 
 
-@app.get("/health")
+@app.get("/healthz")
 async def health_check():
     if len(inference_latency_queue) > 0:
         average_latency = sum(inference_latency_queue) / len(inference_latency_queue)
