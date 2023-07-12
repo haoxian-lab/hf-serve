@@ -54,7 +54,6 @@ async def homepage(
     return output
 
 
-@lru_cache(maxsize=128)  # Cache up to 128 most recently used results
 def perform_inference(pipe, string):
     out = pipe(string)
     return out
