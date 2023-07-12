@@ -54,12 +54,6 @@ async def homepage(
     return output
 
 
-@lru_cache(maxsize=128)  # Cache up to 128 most recently used results
-def perform_inference(pipe, string):
-    out = pipe(string)
-    return out
-
-
 @app.on_event("startup")
 async def startup_event():
     q = asyncio.Queue()
@@ -76,7 +70,7 @@ async def server_loop(q):
 
         # Start measuring the model inference time
         begin_time = time()
-        out = perform_inference(pipe, string)
+        out = pipe(string)
         duration = time() - begin_time
         inference_time_metric.observe(duration)
         inference_latency_queue.append(duration)
