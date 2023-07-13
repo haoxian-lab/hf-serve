@@ -38,9 +38,9 @@ class TextClassificationRequestPayload(BaseModel):
 
 
 @app.post("/")
-async def homepage(
+async def inference(
     data: TextClassificationRequestPayload, response: Response
-) -> List[List[Dict[str, Any]]]:
+) -> List[Dict[str, Any]]:
     string = data.text_data
     logger.info(f"Received request: `{string}`")
     response_q = asyncio.Queue()
@@ -61,21 +61,35 @@ async def startup_event():
     asyncio.create_task(server_loop(q))
 
 
-async def server_loop(q):
+async def server_loop(q: asyncio.Queue):
     logger.info("Loading the model...")
     logger.info(f"Using device: {DEVICE}")
     pipe = pipeline(model=MODEL, top_k=None, device=DEVICE)
     while True:
         (string, response_q) = await q.get()
+        logger.info(f"Received request: `{string}`")
+        strings = [string]
+        queues = [response_q]
+        for _ in range(10):  # 10 is the max batch size
+            try:
+                (string, response_q) = await asyncio.wait_for(
+                    q.get(), timeout=0.1
+                )  # 100ms
+                strings.append(string)
+                queues.append(response_q)
+            except asyncio.exceptions.TimeoutError:
+                logger.info(f"Batching requests stopped..., batch size: {len(strings)}")
+                break
 
         # Start measuring the model inference time
         begin_time = time()
-        out = pipe(string)
+        outs = pipe(strings, batch_size=len(strings))
         duration = time() - begin_time
         inference_time_metric.observe(duration)
         inference_latency_queue.append(duration)
-
-        await response_q.put(out)
+        for out, response_q in zip(outs, queues):
+            logger.debug(f"Sending response: `{out}`")
+            await response_q.put(out)
 
 
 @app.get("/healthz")

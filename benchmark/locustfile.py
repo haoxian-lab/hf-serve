@@ -28,4 +28,7 @@ tweets = [
 class HelloWorldUser(HttpUser):
     @task
     def hello_world(self):
-        self.client.post("", data=choice(tweets).encode())
+        self.client.post(
+            "",
+            json={"text_data": choice(tweets)},
+        )
