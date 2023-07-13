@@ -48,4 +48,7 @@ run-fastapi:
 
 .PHONY: use curl to test the server
 curl:
-	curl -X POST http://localhost:8000 -d "Je deteste la reforme des retraites"
+	curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"text_data": "Je deteste la reforme des retraites"}'
+
+batch:
+	seq 100 | xargs -I{} curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"text_data": "Je deteste la reforme des retraites"}'
