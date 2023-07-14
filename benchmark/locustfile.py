@@ -1,5 +1,6 @@
-from locust import HttpUser, task
 from random import choice
+
+from locust import HttpUser, task
 
 tweets = [
     "Nouvelle mise à jour disponible sur iOS ! 📱 #Apple",
