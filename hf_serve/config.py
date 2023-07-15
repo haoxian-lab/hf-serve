@@ -1,6 +1,6 @@
 import sys
-import torch
 
+import torch
 
 if sys.platform == "darwin":
     DEVICE = "mps"

@@ -27,4 +27,4 @@ jobs:
         black --check .
     - name: Analysing the code with isort
       run: |
-        isort --check .
+        isort --check-only -v .
