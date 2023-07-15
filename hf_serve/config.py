@@ -1,6 +1,6 @@
 import sys
-import torch
 
+import torch
 
 if sys.platform == "darwin":
     DEVICE = "mps"
@@ -9,4 +9,4 @@ elif torch.cuda.is_available():
 else:
     DEVICE = "cpu"
 
-MODEL = f"cardiffnlp/tweet-topic-21-multi"
+MODEL = "cardiffnlp/tweet-topic-21-multi"

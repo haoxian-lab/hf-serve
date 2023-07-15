@@ -1,10 +1,9 @@
 import asyncio
 from collections import deque
-from functools import lru_cache
 from time import time
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Response, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 from prometheus_client import Histogram
@@ -56,24 +55,24 @@ async def inference(
 
 @app.on_event("startup")
 async def startup_event():
-    q = asyncio.Queue()
-    app.model_queue = q
-    asyncio.create_task(server_loop(q))
+    queue = asyncio.Queue()
+    app.model_queue = queue
+    asyncio.create_task(server_loop(queue))
 
 
-async def server_loop(q: asyncio.Queue):
+async def server_loop(model_queue: asyncio.Queue):
     logger.info("Loading the model...")
     logger.info(f"Using device: {DEVICE}")
     pipe = pipeline(model=MODEL, top_k=None, device=DEVICE)
     while True:
-        (string, response_q) = await q.get()
+        (string, response_q) = await model_queue.get()
         logger.info(f"Received request: `{string}`")
         strings = [string]
         queues = [response_q]
         for _ in range(10):  # 10 is the max batch size
             try:
                 (string, response_q) = await asyncio.wait_for(
-                    q.get(), timeout=0.1
+                    model_queue.get(), timeout=0.1
                 )  # 100ms
                 strings.append(string)
                 queues.append(response_q)
