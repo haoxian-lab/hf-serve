@@ -22,3 +22,9 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
+    - name: Analysing the code with black
+      run: |
+        black --check .
+    - name: Analysing the code with isort
+      run: |
+        isort --check .
