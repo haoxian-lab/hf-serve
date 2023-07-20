@@ -27,3 +27,7 @@ def test_endpoint(
 ):  # pylint: disable=redefined-outer-name
     response = test_client.request(method, path, json={"data": "test"})
     assert response.status_code == expected_status
+    resp_json = response.json()
+    if path == "/":
+        assert "result" in resp_json
+        assert isinstance(resp_json["result"], list)

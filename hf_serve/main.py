@@ -23,6 +23,7 @@ async def lifespan(myapp: FastAPI):
     This context manager is used to load the model before the server
     starts to receive requests
     """
+    instrumentator.expose(app)
     global pipe  # pylint: disable=global-statement
     pipe = pipeline(
         task=settings.TASK,
@@ -43,6 +44,7 @@ async def lifespan(myapp: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(api_router)
+instrumentator = Instrumentator().instrument(app)
 
 # Create Prometheus Histogram metrics
 inference_time_metric = Histogram(
@@ -60,25 +62,25 @@ async def server_loop(model_queue: asyncio.Queue):
     logger.info(f"Using device: {settings.DEVICE}")
 
     while True:
-        (string, response_q) = await model_queue.get()
-        logger.info(f"Received request: `{string}`")
-        strings = [string]
+        (data, response_q) = await model_queue.get()
+        logger.info(f"Received request: `{data}`")
+        datum = [data]
         queues = [response_q]
         for _ in range(10):  # 10 is the max batch size
             try:
-                (string, response_q) = await asyncio.wait_for(
+                (data, response_q) = await asyncio.wait_for(
                     model_queue.get(), timeout=0.1
                 )  # 100ms
-                strings.append(string)
+                datum.append(data)
                 queues.append(response_q)
             except asyncio.exceptions.TimeoutError:
-                logger.info(f"Batching requests stopped..., batch size: {len(strings)}")
+                logger.info(f"Batching requests stopped..., batch size: {len(datum)}")
                 break
 
         # Start measuring the model inference time
         begin_time = time()
         # pylint: disable=not-callable
-        outs = pipe(strings, batch_size=len(strings), top_k=-1)
+        outs = pipe(datum, batch_size=len(datum), top_k=-1)
         duration = time() - begin_time
         inference_time_metric.observe(duration)
         inference_latency_queue.append(duration)
@@ -112,13 +114,3 @@ def model_loaded() -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_200_OK, content={"status": "model loaded"}
     )
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    # Instrument the FastAPI application with Prometheus metrics
-    Instrumentator().instrument(app).expose(app)
-    logger.info("Starting the service...")
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)

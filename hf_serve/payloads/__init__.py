@@ -1,5 +1,12 @@
-from .text_classification_payload import TextClassificationRequestPayload
+from .request_payloads import *
+from .response_payloads import *
 
-PAYLOADS = {
-    "text-classification": TextClassificationRequestPayload,
+REQUEST_PAYLOADS = {
+    "text-classification": TextPayload,
+    "feature-extraction": FeatureExtractionRequestPayload,
+}
+
+RESPONSE_PAYLOADS = {
+    "text-classification": TextClassificationResponsePayload,
+    "feature-extraction": FeatureExtractionResponsePayload,
 }
