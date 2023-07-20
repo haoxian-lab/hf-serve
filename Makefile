@@ -38,16 +38,22 @@ venv:
 # Define default target
 .DEFAULT_GOAL := help
 
-.PHONY: run example model server with fastapi and uvicorn
+.PHONY: run service with default profile
 run:
 	poetry run uvicorn hf_serve.main:app --reload
 
-.PHONY: use curl to test the server
+.PHONY: use curl to test the feature extraction service
+run-feature-extraction:
+	HF_SERVE_TASK=feature-extraction poetry run uvicorn hf_serve.main:app --reload
+
+.PHONY: use curl to test the text classification service
 text-classification:
-	curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"text_data": "Je deteste la reforme des retraites"}'
+	curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"data": "Je deteste la reforme des retraites"}'
+
+
 
 batch-text-classification:
-	seq 100 | xargs -I{} curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"text_data": "Je deteste la reforme des retraites"}'
+	seq 100 | xargs -I{} curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"data": "Je deteste la reforme des retraites"}'
 
 fmt:
 	poetry run black hf_serve tests

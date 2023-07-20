@@ -1,5 +1,4 @@
 import asyncio
-from typing import Any, Dict, List
 
 from fastapi import APIRouter, Response
 from loguru import logger
@@ -7,11 +6,12 @@ from prometheus_client import Histogram
 from starlette.requests import Request
 
 from hf_serve.config import settings
-from hf_serve.payloads import PAYLOADS
+from hf_serve.payloads import REQUEST_PAYLOADS, RESPONSE_PAYLOADS
 
 router = APIRouter()
 
-payload = PAYLOADS[settings.TASK]
+request_payload = REQUEST_PAYLOADS[settings.TASK]
+response_payload = RESPONSE_PAYLOADS[settings.TASK]
 
 latency_metric = Histogram(
     "request_latency_seconds",
@@ -22,16 +22,18 @@ latency_metric = Histogram(
 
 @router.post("/")
 async def inference(
-    request: Request, data: payload, response: Response
-) -> List[Dict[str, Any]]:
-    string = data.text_data
-    logger.info(f"Received request: `{string}`")
+    request: Request, request_data: request_payload, response: Response
+) -> response_payload:
+    data = request_data.data
+    logger.info(f"Received request of type: `{type(data)}`")
     response_q = asyncio.Queue()
-    await request.app.model_queue.put((string, response_q))
+    await request.app.model_queue.put((data, response_q))
 
     # Start measuring the request latency
     with latency_metric.time():
         output = await response_q.get()
 
     response.status_code = 200
-    return output
+    if isinstance(output, list) and isinstance(output[0], list):
+        output = output[0][0]
+    return {"result": output}
