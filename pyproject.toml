@@ -20,6 +20,7 @@ prometheus_fastapi_instrumentator = "^6.0.0"
 loguru = "^0.7.0"
 prometheus-client = "^0.8.0"
 numpy = "^1.21.0"
+dynaconf = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
@@ -27,6 +28,7 @@ isort = "^5.12.0"
 mypy = "^1.2.0"
 pylint = "^2.17.2"
 pytest = "^7.3.0"
+httpx = "^0.24.0"
 
 [build-system]
 requires = ["poetry-core>1.4"]
@@ -39,3 +41,6 @@ disable = [
   "too-few-public-methods",
 ]
 extension-pkg-whitelist=["pydantic"]
+
+[tool.pylint.BASIC]
+good-names = ["a", "b", "c", "d", "e", "df", "i", "logger", "n", "tz", "pipe"]
