@@ -38,17 +38,18 @@ venv:
 # Define default target
 .DEFAULT_GOAL := help
 
-.PHONY: run example model server with starlette and uvicorn
-run-starlette:
-	poetry run uvicorn hf_serve.serving_starlette:app --reload
-
 .PHONY: run example model server with fastapi and uvicorn
-run-fastapi:
-	poetry run uvicorn hf_serve.serving_fastapi:app --reload
+run:
+	poetry run uvicorn hf_serve.main:app --reload
 
 .PHONY: use curl to test the server
-curl:
+text-classification:
 	curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"text_data": "Je deteste la reforme des retraites"}'
 
-batch:
+batch-text-classification:
 	seq 100 | xargs -I{} curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"text_data": "Je deteste la reforme des retraites"}'
+
+fmt:
+	poetry run black hf_serve tests
+	poetry run isort hf_serve tests
+

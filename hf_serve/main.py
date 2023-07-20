@@ -1,19 +1,49 @@
 import asyncio
+import shutil
 from collections import deque
+from contextlib import asynccontextmanager
 from time import time
-from typing import Any, Dict, List
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 from prometheus_client import Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
-from pydantic import BaseModel, Field
 from transformers import pipeline
 
-from hf_serve.config import DEVICE, MODEL
+from hf_serve.config import settings
+from hf_serve.payloads import PAYLOADS
+from hf_serve.routers import api_router
 
-app = FastAPI()
+pipe = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    This context manager is used to load the model before the server
+    starts to receive requests
+    """
+    global pipe
+    pipe = pipeline(
+        task=settings.TASK,
+        model=settings.MODEL,
+        device=settings.DEVICE,
+        model_kwargs={"cache_dir": settings.MODEL_CACHE_DIR},
+    )
+    queue = asyncio.Queue()
+    app.model_queue = queue
+    asyncio.create_task(server_loop(queue))
+    yield
+    # Clean up model
+    pipe = None
+    if settings.CLEAR_MODEL_CACHE_ON_SHUTDOWN:
+        logger.info("Clearing the model cache...")
+        shutil.rmtree(settings.MODEL_CACHE_DIR)
+
+
+app = FastAPI(lifespan=lifespan)
+app.include_router(api_router)
 
 # Create Prometheus Histogram metrics
 inference_time_metric = Histogram(
@@ -21,49 +51,15 @@ inference_time_metric = Histogram(
     "Time taken for model inference",
     buckets=[0.001, 0.01, 0.1, 1, 10],
 )
-latency_metric = Histogram(
-    "request_latency_seconds",
-    "Latency of requests",
-    buckets=[0.001, 0.01, 0.1, 1, 10],
-)
+
 
 inference_latency_queue = deque(maxlen=10)
 
 
-class TextClassificationRequestPayload(BaseModel):
-    text_data: str = Field(
-        default="A string to be classified", example="A string to be classified"
-    )
-
-
-@app.post("/")
-async def inference(
-    data: TextClassificationRequestPayload, response: Response
-) -> List[Dict[str, Any]]:
-    string = data.text_data
-    logger.info(f"Received request: `{string}`")
-    response_q = asyncio.Queue()
-    await app.model_queue.put((string, response_q))
-
-    # Start measuring the request latency
-    with latency_metric.time():
-        output = await response_q.get()
-
-    response.status_code = 200
-    return output
-
-
-@app.on_event("startup")
-async def startup_event():
-    queue = asyncio.Queue()
-    app.model_queue = queue
-    asyncio.create_task(server_loop(queue))
-
-
 async def server_loop(model_queue: asyncio.Queue):
     logger.info("Loading the model...")
-    logger.info(f"Using device: {DEVICE}")
-    pipe = pipeline(model=MODEL, top_k=None, device=DEVICE)
+    logger.info(f"Using device: {settings.DEVICE}")
+
     while True:
         (string, response_q) = await model_queue.get()
         logger.info(f"Received request: `{string}`")
@@ -82,7 +78,7 @@ async def server_loop(model_queue: asyncio.Queue):
 
         # Start measuring the model inference time
         begin_time = time()
-        outs = pipe(strings, batch_size=len(strings))
+        outs = pipe(strings, batch_size=len(strings), top_k=-1)
         duration = time() - begin_time
         inference_time_metric.observe(duration)
         inference_latency_queue.append(duration)
@@ -104,6 +100,18 @@ async def health_check():
                 },
             )
     return JSONResponse(status_code=status.HTTP_200_OK, content={"status": "healthy"})
+
+
+@app.get("/readyz")
+def model_loaded() -> JSONResponse:
+    if pipe is None:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "model not loaded"},
+        )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"status": "model loaded"}
+    )
 
 
 if __name__ == "__main__":
