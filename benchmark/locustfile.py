@@ -1,5 +1,6 @@
 from random import choice, sample
 from string import ascii_letters
+
 from locust import HttpUser, task
 
 tweets = [

@@ -56,6 +56,6 @@ batch-text-classification:
 	seq 100 | xargs -I{} curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"data": "Je deteste la reforme des retraites"}'
 
 fmt:
-	poetry run black hf_serve tests
-	poetry run isort hf_serve tests
+	poetry run black hf_serve tests benchmark
+	poetry run isort hf_serve tests benchmark
 
