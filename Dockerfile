@@ -23,7 +23,8 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install poetry && poetry config virtualenvs.create false && poetry install && rm -rf ~/.cache
 
 # Install pytorch with cuda
-RUN pip install torch  --index-url https://download.pytorch.org/whl/cu118 --no-cache-dir
+RUN pip install torch --index-url https://download.pytorch.org/whl/cu118 --no-cache-dir
+RUN pip install xformer --no-cache-dir
 
 
 
