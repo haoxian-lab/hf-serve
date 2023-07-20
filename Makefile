@@ -40,11 +40,11 @@ venv:
 
 .PHONY: run service with default profile
 run:
-	poetry run uvicorn hf_serve.main:app --reload
+	poetry run uvicorn hf_serve.main:app 
 
 .PHONY: use curl to test the feature extraction service
 run-feature-extraction:
-	HF_SERVE_TASK=feature-extraction poetry run uvicorn hf_serve.main:app --reload
+	HF_SERVE_TASK=feature-extraction poetry run uvicorn hf_serve.main:app 
 
 .PHONY: use curl to test the text classification service
 text-classification:
@@ -56,6 +56,6 @@ batch-text-classification:
 	seq 100 | xargs -I{} curl -X POST http://localhost:8000 -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"data": "Je deteste la reforme des retraites"}'
 
 fmt:
-	poetry run black hf_serve tests
-	poetry run isort hf_serve tests
+	poetry run black hf_serve tests benchmark
+	poetry run isort hf_serve tests benchmark
 

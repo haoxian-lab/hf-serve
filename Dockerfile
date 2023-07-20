@@ -29,7 +29,7 @@ RUN pip install xformer --no-cache-dir
 
 
 # Expose the port that the application will run on
-EXPOSE 80
+EXPOSE 8000
 
 # Start the application when the container starts
 CMD ["poetry", "run", "uvicorn", "hf_serve.main:app"]

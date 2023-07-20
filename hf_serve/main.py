@@ -25,6 +25,7 @@ async def lifespan(myapp: FastAPI):
     """
     instrumentator.expose(app)
     global pipe  # pylint: disable=global-statement
+    logger.info(f"Loading the model... Using device {settings.DEVICE}")
     pipe = pipeline(
         task=settings.TASK,
         model=settings.MODEL,
@@ -69,7 +70,7 @@ async def server_loop(model_queue: asyncio.Queue):
         for _ in range(10):  # 10 is the max batch size
             try:
                 (data, response_q) = await asyncio.wait_for(
-                    model_queue.get(), timeout=0.1
+                    model_queue.get(), timeout=0.01
                 )  # 100ms
                 datum.append(data)
                 queues.append(response_q)
@@ -85,7 +86,7 @@ async def server_loop(model_queue: asyncio.Queue):
         inference_time_metric.observe(duration)
         inference_latency_queue.append(duration)
         for out, response_q in zip(outs, queues):
-            logger.debug(f"Sending response: `{out}`")
+            # logger.debug(f"Sending response: `{out}`")
             await response_q.put(out)
 
 
