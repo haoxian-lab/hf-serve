@@ -41,3 +41,6 @@ disable = [
   "too-few-public-methods",
 ]
 extension-pkg-whitelist=["pydantic"]
+
+[tool.pylint.BASIC]
+good-names = ["a", "b", "c", "d", "e", "df", "i", "logger", "n", "tz", "pipe"]

@@ -22,6 +22,8 @@ def test_client():
         ("/readyz", 200, "get"),
     ],
 )
-def test_endpoint(test_client, path, expected_status, method):
+def test_endpoint(
+    test_client, path, expected_status, method
+):  # pylint: disable=redefined-outer-name
     response = test_client.request(method, path, json={"data": "test"})
     assert response.status_code == expected_status

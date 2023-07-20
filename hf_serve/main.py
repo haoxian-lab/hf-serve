@@ -12,19 +12,18 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from transformers import pipeline
 
 from hf_serve.config import settings
-from hf_serve.payloads import PAYLOADS
 from hf_serve.routers import api_router
 
 pipe = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(myapp: FastAPI):
     """
     This context manager is used to load the model before the server
     starts to receive requests
     """
-    global pipe
+    global pipe  # pylint: disable=global-statement
     pipe = pipeline(
         task=settings.TASK,
         model=settings.MODEL,
@@ -32,7 +31,7 @@ async def lifespan(app: FastAPI):
         model_kwargs={"cache_dir": settings.MODEL_CACHE_DIR},
     )
     queue = asyncio.Queue()
-    app.model_queue = queue
+    myapp.model_queue = queue
     asyncio.create_task(server_loop(queue))
     yield
     # Clean up model
@@ -78,6 +77,7 @@ async def server_loop(model_queue: asyncio.Queue):
 
         # Start measuring the model inference time
         begin_time = time()
+        # pylint: disable=not-callable
         outs = pipe(strings, batch_size=len(strings), top_k=-1)
         duration = time() - begin_time
         inference_time_metric.observe(duration)
