@@ -1,4 +1,4 @@
-name: Pylint
+name: test and lint 
 
 on: [push]
 
@@ -28,3 +28,6 @@ jobs:
     - name: Analysing the code with isort
       run: |
         isort --check-only -v .
+    - name: test
+      run: |
+        pytest
