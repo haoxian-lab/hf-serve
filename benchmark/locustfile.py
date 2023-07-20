@@ -1,5 +1,5 @@
-from random import choice
-
+from random import choice, sample
+from string import ascii_letters
 from locust import HttpUser, task
 
 tweets = [
@@ -26,10 +26,13 @@ tweets = [
 ]
 
 
-class HelloWorldUser(HttpUser):
+class HFModelUser(HttpUser):
     @task
-    def hello_world(self):
+    def bench(self):
+        example = choice(tweets)
+
+        rand = sample(ascii_letters, 4)
         self.client.post(
             "",
-            json={"text_data": choice(tweets)},
+            json={"data": example + "".join(rand)},
         )

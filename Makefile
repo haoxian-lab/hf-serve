@@ -40,11 +40,11 @@ venv:
 
 .PHONY: run service with default profile
 run:
-	poetry run uvicorn hf_serve.main:app --reload
+	poetry run uvicorn hf_serve.main:app 
 
 .PHONY: use curl to test the feature extraction service
 run-feature-extraction:
-	HF_SERVE_TASK=feature-extraction poetry run uvicorn hf_serve.main:app --reload
+	HF_SERVE_TASK=feature-extraction poetry run uvicorn hf_serve.main:app 
 
 .PHONY: use curl to test the text classification service
 text-classification:
